@@ -1,0 +1,38 @@
+{
+  "name": "@repo/http",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./lib": "./src/lib/index.ts",
+    "./must": "./src/must/*/index.ts",
+    "./lawn": "./src/lawn/*/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "generate:component": "turbo gen react-component",
+    "check-types": "tsc --noEmit",
+    "format:write": "prettier --write \"**/*.{ts,tsx,mdx}\" --cache",
+    "format:check": "prettier --check \"**/*.{ts,tsx,mdx}\" --cache",
+    "release": "changeset version",
+    "pub:beta": "pnpm build && pnpm publish --no-git-checks --access public --tag beta",
+    "pub:next": "pnpm build && pnpm publish --no-git-checks --access public --tag next",
+    "pub:release": "pnpm build && pnpm publish --access public"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@turbo/gen": "^2.5.0",
+    "@types/node": "^20.11.24",
+    "@types/react": "19.1.0",
+    "eslint": "^9.28.0",
+    "next": "^15.3.0",
+    "react": "^19.1.0",
+    "typescript": "5.8.2"
+  },
+  "dependencies": {
+    "@repo/utils": "workspace:^",
+    "@tanstack/react-query": "^5.81.5",
+    "ky": "^1.8.1",
+    "zod": "^3.25.74"
+  }
+}

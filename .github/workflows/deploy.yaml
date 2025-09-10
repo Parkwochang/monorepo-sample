@@ -1,0 +1,184 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  # pull_request:
+  #   branches:
+  #     - main
+  #   types: [closed]
+env: #환경변수
+  DEFAULT_NODE_VERSION: '20.x' #node.js 기본 버전 설정
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      project_name: ${{ steps.set-env.outputs.project_name }}
+      data_tag: ${{ steps.set-env.outputs.data_tag }}
+      bucket_name: ${{ steps.set-env.outputs.bucket_name }}
+      image_name: ${{ steps.set-env.outputs.image_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set Environment Variables
+        id: set-env
+        run: |
+          DATE=$(date +%Y%m%d%H%M%S)
+          PROJECT_NAME=$(echo "${{ github.event.head_commit.message }}" | grep -o '\[[^][]*\]' | tr -d '[]')
+          BUCKET_NAME=$(echo "${{ github.event.head_commit.message }}" | grep -o '([^)]*)'  | tr -d '()')
+          IMAGE_NAME="${PROJECT_NAME}/${BUCKET_NAME}"
+
+          echo "${IMAGE_NAME}"
+
+          echo "project_name=${PROJECT_NAME}" >> $GITHUB_OUTPUT
+          echo "data_tag=${DATE}" >> $GITHUB_OUTPUT
+          echo "bucket_name=${BUCKET_NAME}" >> $GITHUB_OUTPUT
+          echo "image_name=${IMAGE_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Save state
+        run: echo "{name}={value}" >> $GITHUB_STATE
+
+      - name: Set output
+        run: echo "{name}={value}" >> $GITHUB_OUTPUT
+
+      - name: Login to DockerHub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.REGISTRY }}
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3 # buildx 설정
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./docker/fe.dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ secrets.REGISTRY }}/${{ steps.set-env.outputs.image_name}}:${{ steps.set-env.outputs.data_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            APP_NAME=${{ steps.set-env.outputs.project_name }}-${{ steps.set-env.outputs.bucket_name }}
+            ENVIRONMENT=prod
+
+  notify-discord:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Extract Commit Info
+        id: commit-info
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=format:'%s')
+          COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')
+          COMMIT_HASH=$(git log -1 --pretty=format:'%h')
+
+          echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          echo "author=$COMMIT_AUTHOR" >> $GITHUB_OUTPUT
+          echo "hash=$COMMIT_HASH" >> $GITHUB_OUTPUT
+
+      - name: Send Discord Notification
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: '📦 새로운 이미지 배포 알림'
+          description: |
+            **프로젝트**: ${{ needs.build.outputs.project_name }}
+            **태그**: ${{ secrets.REGISTRY }}/${{ needs.build.outputs.project_name }}/${{ needs.build.outputs.bucket_name }}:${{ needs.build.outputs.data_tag }}
+            **저장소**: ${{ github.repository }}
+            **브랜치**: `${{ github.ref_name }}`
+            **커밋**: `${{ steps.commit-info.outputs.hash }}`
+            **작성자**: ${{ steps.commit-info.outputs.author }}
+            **메시지**: ${{ steps.commit-info.outputs.message }}
+
+            [커밋 보기](${{ github.event.head_commit.url }})
+          color: 0x00ff00
+          username: GitHub Bot
+          avatar_url: https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout k8s manifests repository
+        uses: actions/checkout@v4
+        with:
+          repository: Team-M-M/k8s-manifests
+          ref: main # 또는 원하는 브랜치
+          token: ${{ secrets.ACTION_TOKEN }}
+          path: k8s-manifests
+
+      - name: Update Kubernetes manifest
+        run: |
+          cd k8s-manifests
+          # 이미지 태그 업데이트
+
+          echo "${{ secrets.REGISTRY }}/${{ needs.build.outputs.project_name }}/${{ needs.build.outputs.bucket_name }}:${{ needs.build.outputs.data_tag }}"
+          echo "./${{needs.build.outputs.project_name}}/${{ needs.build.outputs.project_name }}-${{ needs.build.outputs.bucket_name }}-deploy.yaml"
+
+          sed -i "s|image: ${{ secrets.REGISTRY }}/${{ needs.build.outputs.image_name }}:.*|image: ${{ secrets.REGISTRY }}/${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.data_tag }}|" ./${{needs.build.outputs.project_name}}/${{needs.build.outputs.project_name}}-${{needs.build.outputs.bucket_name}}-deploy.yaml
+
+      - name: Commit and push changes
+        run: |
+          cd k8s-manifests
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "github-actions"
+          git add ./${{needs.build.outputs.project_name}}/${{needs.build.outputs.project_name}}-${{needs.build.outputs.bucket_name}}-deploy.yaml
+          git commit -m "chore: Update ./${{needs.build.outputs.project_name}}/${{needs.build.outputs.project_name}}-${{needs.build.outputs.bucket_name}}-deploy.yaml"
+          git push
+
+# docker push harbor.woostack.dev/${{ env.PROJECT_NAME }}/fe:latest &
+# deploy:
+#   needs: [build]
+#   runs-on: ubuntu-latest
+#   # if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+#   steps:
+#     - name: main branch
+#       uses: appleboy/ssh-action@master
+#       with:
+#         host: ${{ secrets.REMOTE_SSH_HOST }}
+#         username: ${{ secrets.REMOTE_SSH_UESRNAME }}
+#         password: ${{ secrets.REMOTE_SSH_PASSWORD }}
+#         port: ${{ secrets.REMOTE_SSH_PORT }}
+#         script_stop: true
+#         script: |
+#           cd /project/namdo
+#           git restore .
+#           git pull
+#           pnpm install
+#           pnpm build
+#           pm2 reload ecosystem.config.js
+
+# - name: Build Docker Image
+#   uses: docker/build-push-action@v4
+#   run: |
+#     echo "${{ env.PROJECT_NAME }}"
+
+#     if [ "${{ env.PROJECT_NAME }}" = "admin" ]; then
+#       echo "Building admin project..."
+#       docker build -t harbor.woostack.dev/${{ env.PROJECT_NAME }}/fe:${{env.DATA_TAG}} -f ./docker/fe.dockerfile . --build-arg APP_NAME=${{ env.PROJECT_NAME }} --build-arg ENVIRONMENT="prod"
+
+#     elif [ "${{ env.PROJECT_NAME }}" = "web" ]; then
+#       echo "Building web project..."
+#       docker build -t harbor.woostack.dev/${{ env.PROJECT_NAME }}/fe:${{env.DATA_TAG}} -f ./docker/fe.dockerfile . --build-arg APP_NAME=${{ env.PROJECT_NAME }} --build-arg ENVIRONMENT="prod"
+
+#     elif [ "${{ env.PROJECT_NAME }}" = "must" ]; then
+#       echo "Building must project..."
+#       docker build -t harbor.woostack.dev/${{ env.PROJECT_NAME }}/fe:${{env.DATA_TAG}} -f ./docker/fe.dockerfile . --build-arg APP_NAME=${{ env.PROJECT_NAME }} --build-arg ENVIRONMENT="prod"
+
+#     fi
+
+# - name: Publish to docker hub
+#   run: |
+#     docker push harbor.woostack.dev/${{ env.PROJECT_NAME }}/fe:${{env.DATA_TAG}}
+#     wait
+# buildx failed with: ERROR: failed to build: failed to solve: process "/bin/sh -c pnpm ${APP_NAME} build:${ENVIRONMENT} &&     pnpm prune --prod &&     pnpm store prune &&     apk del .builds-deps" did not complete successfully: exit code: 1

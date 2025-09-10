@@ -1,0 +1,47 @@
+{
+  "name": "lawni-fe",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "env-cmd -f .env.local next dev --turbopack",
+    "build": "next build",
+    "build:dev": "env-cmd -f .env.dev ANALYZE=true next build",
+    "build:prod": "env-cmd -f .env.prod next build",
+    "start": "next start",
+    "start:prod": "next start",
+    "lint": "next lint --max-warnings 0",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.0",
+    "@repo/http": "workspace:^",
+    "@repo/ui": "workspace:*",
+    "@repo/utils": "workspace:^",
+    "@tanstack/react-query": "^5.81.5",
+    "@uiw/react-md-editor": "^4.0.8",
+    "@use-funnel/browser": "^0.0.15",
+    "date-fns": "^4.1.0",
+    "lib": "link:@repo/core/lib",
+    "minio": "^8.0.5",
+    "motion": "^12.23.12",
+    "next": "^15.3.0",
+    "next-auth": "^4.24.11",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-hook-form": "^7.60.0",
+    "react-lottie-player": "^2.1.0",
+    "zustand": "^5.0.7"
+  },
+  "devDependencies": {
+    "@next/bundle-analyzer": "^15.3.5",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^22.15.3",
+    "@types/react": "19.1.0",
+    "@types/react-dom": "19.1.1",
+    "env-cmd": "^10.1.0",
+    "eslint": "^9.28.0",
+    "typescript": "5.8.2"
+  }
+}

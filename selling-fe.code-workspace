@@ -1,0 +1,33 @@
+{
+  "folders": [
+    {
+      "name": "✨ test",
+      "path": ".",
+    },
+    {
+      "name": "🚀 must",
+      "path": "apps/must",
+    },
+    {
+      "name": "🚀 must-admin",
+      "path": "apps/must-admin",
+    },
+    {
+      "name": "📦 @repo/core",
+      "path": "packages/core",
+    },
+    {
+      "name": "📦 @repo/http",
+      "path": "packages/http",
+    },
+    {
+      "name": "📦 @repo/ui",
+      "path": "packages/ui",
+    },
+    {
+      "name": "📦 @repo/utils",
+      "path": "packages/utils",
+    },
+  ],
+  "settings": {},
+}

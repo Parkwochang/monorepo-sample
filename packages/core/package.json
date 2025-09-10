@@ -1,0 +1,36 @@
+{
+  "name": "@repo/core",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "A collection of utility functions",
+  "exports": {
+    "./lib": "./src/lib/index.ts",
+    "./es-toolkit": "./src/lib/es-toolkit.ts",
+    "./format-time": "./src/lib/format-time.ts",
+    "./hook-form": "./src/lib/hook-form.ts",
+    "./zod": "./src/lib/zod.ts",
+    "./schema/*": "./src/schema/*.ts"
+  },
+  "scripts": {
+    "dev": "tsup --watch",
+    "check-types": "tsc --noEmit",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint . --max-warnings=20 --cache --fix"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/eslint": "^8.56.5",
+    "@types/node": "^20.11.24",
+    "eslint": "^9.8.0",
+    "tsup": "^8.0.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0",
+    "es-toolkit": "^1.39.6",
+    "react-hook-form": "^7.60.0",
+    "zod": "^3.25.74"
+  }
+}

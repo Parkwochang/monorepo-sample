@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // output   = "../node_modules/.prisma/client"
+}
+
+model FoodOption {
+  id              Int      @id @unique(map: "option_id") @default(autoincrement())
+  name            String   @db.VarChar(64)
+  description     String   @db.VarChar(255)
+  imageUrl        String   @db.VarChar(500) @map(name:"image_url")
+  timer           String   @db.VarChar(8)
+  utensilId       Int      @db.SmallInt()   @map(name:"utensil_id")
+  ingredientId    Int      @db.SmallInt()   @map(name:"ingredient_id")
+  foodId          Int      @db.SmallInt()   @map(name:"food_id")
+  isActive        Boolean  @default(true)   @map(name:"is_active")
+  isDeleted       Boolean  @default(false)  @map(name:"is_deleted")
+  createdAt       DateTime @default(now())  @db.Timestamp(6) @map(name:"created_at")
+  updatedAt       DateTime @updatedAt       @db.Timestamp(6) @map(name:"updated_at")
+
+  food            Food           @relation(fields: [foodId], references: [id],onDelete: Cascade)
+  utensil         FoodUtensils   @relation(fields: [utensilId], references: [id],onDelete: Cascade)
+  ingredient      FoodIngredient @relation(fields: [ingredientId], references: [id],onDelete: Cascade)
+
+  @@map(name:"food_option")
+}
+
+model Food {
+  id              Int      @id @unique(map: "food_id") @default(autoincrement())
+  name            String   @db.VarChar(64)
+  description     String   @db.VarChar(255)
+  imageUrl        String   @db.VarChar(255) @map(name:"image_url")
+  ingredientId    Int      @db.SmallInt()
+  isActive        Boolean  @default(true)   @map(name:"is_active")
+  isDeleted       Boolean  @default(false)  @map(name:"is_deleted")
+  createdAt       DateTime @default(now())  @db.Timestamp(6) @map(name:"created_at")
+  updatedAt       DateTime @updatedAt       @db.Timestamp(6) @map(name:"updated_at")
+
+  foodOption      FoodOption[]
+  foodIngredient  FoodIngredient @relation(fields: [ingredientId], references: [id],onDelete: Cascade)
+
+  // @@index([destination])
+
+  @@map(name:"food")
+}
+
+// ! 도구
+model FoodUtensils {
+  id              Int      @id @unique(map: "utensils_id") @default(autoincrement())
+  name            String   @db.VarChar(64)
+  description     String   @db.VarChar(255)
+  imageUrl        String   @db.VarChar(255) @map(name:"image_url")
+  isActive        Boolean  @default(true)   @map(name:"is_active")
+  isDeleted       Boolean  @default(false)  @map(name:"is_deleted")
+  createdAt       DateTime @default(now())  @db.Timestamp(6) @map(name:"created_at")
+  updatedAt       DateTime @updatedAt       @db.Timestamp(6) @map(name:"updated_at")
+
+  foodOption     FoodOption[]
+
+  @@map(name:"food_utensils")
+}
+
+// ! 재료
+model FoodIngredient {
+  id              Int      @id @unique(map: "ingredient_id") @default(autoincrement())
+  name            String   @db.VarChar(64)
+  description     String   @db.VarChar(255)
+  imageUrl        String   @db.VarChar(255) @map(name:"image_url")
+  isActive        Boolean  @default(true)   @map(name:"is_active")
+  isDeleted       Boolean  @default(false)  @map(name:"is_deleted")
+  createdAt       DateTime @default(now())  @db.Timestamp(6) @map(name:"created_at")
+  updatedAt       DateTime @updatedAt       @db.Timestamp(6) @map(name:"updated_at")
+
+  foodOption      FoodOption[]
+  food            Food[]
+
+  @@map(name:"food_ingredient")
+}
+
+// ! 유저 정보
+
+model User {
+  id              Int      @id @unique(map: "user_id") @default(autoincrement())
+  name            String   @db.VarChar(64)
+  email           String   @db.VarChar(255) @unique(map: "user_email")
+  password        String   @db.VarChar(255)
+  provider        String   @db.VarChar(255) @default("EMAIL")
+  role            String   @db.VarChar(255) @default("MEMBER")
+  createdAt       DateTime @default(now())  @db.Timestamp(6) @map(name:"created_at")
+  updatedAt       DateTime @updatedAt       @db.Timestamp(6) @map(name:"updated_at")
+  isActive        Boolean  @default(true)   @map(name:"is_active")
+  isDeleted       Boolean  @default(false)  @map(name:"is_deleted")
+
+  @@map(name:"user")
+}

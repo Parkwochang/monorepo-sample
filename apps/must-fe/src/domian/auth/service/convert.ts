@@ -1,0 +1,23 @@
+import type { MemberEntity } from '@workspace/http/must/member';
+
+// ----------------------------------------------------------------------
+
+export const convertMember = (member: MemberEntity.MemberRes) => {
+  const { id, address, username, name, englishName, phone, email, birthDate, gender, role, profileImageUrl, churchId } =
+    member;
+
+  return {
+    id,
+    address,
+    username,
+    name,
+    englishName,
+    phone,
+    email,
+    birthDate,
+    gender,
+    role,
+    profileImageUrl,
+    churchId,
+  } as MemberEntity.UpdateMember satisfies MemberEntity.UpdateMember;
+};

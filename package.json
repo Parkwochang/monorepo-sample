@@ -1,0 +1,30 @@
+{
+  "name": "test",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "check-types": "turbo run check-types",
+    "turbo-prune": "turbo prune --scope=must --docker",
+    "must-fe": "pnpm -F must-fe",
+    "must-admin": "pnpm -F must-admin",
+    "lawni-fe": "pnpm -F lawni-fe",
+    "lawni-admin": "pnpm -F lawni-admin",
+    "timer-be": "pnpm -F project-be",
+    "ui": "pnpm -F @repo/ui",
+    "core": "pnpm -F @repo/core",
+    "utils": "pnpm -F @repo/utils",
+    "http": "pnpm -F @repo/http"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "turbo": "^2.5.4",
+    "typescript": "5.8.2"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=18"
+  }
+}
